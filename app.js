@@ -39,6 +39,10 @@ client.on("message", async (message) => {
 					name: "servers",
 					value: "get a list of the abbreviations of all the valorant servers",
 				},
+				{
+					name: "insult [user(default=you)]",
+					value: "send a randomly generated insult and ping the specified user",
+				},
 			]);
 
 		message.channel.send({ embed: helpEmbed });
@@ -239,6 +243,18 @@ client.on("message", async (message) => {
 			]);
 
 		message.channel.send({ embed: serversEmbed });
+	} else if (command === "insult") {
+		const response = await axios.get(
+			"https://evilinsult.com/generate_insult.php?lang=en&amp;type=json"
+		);
+		const insult = response.data;
+		const taggedUser = message.mentions.users.first();
+
+		if (taggedUser != null) {
+			message.channel.send(`<@${taggedUser.id}>, ${insult}`);
+		} else {
+			message.channel.send(`<@${message.author.id}>, ${insult}`);
+		}
 	}
 });
 
