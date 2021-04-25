@@ -65,7 +65,6 @@ client.on("message", async (message) => {
 				{
 					headers: {
 						"X-Riot-Token": process.env.RIOT_AUTH_TOKEN,
-						"Accept-Language": "en-US,en;",
 					},
 				}
 			);
@@ -103,6 +102,48 @@ client.on("message", async (message) => {
 			}
 
 			message.channel.send({ embed: statusEmbed });
+		} catch (err) {
+			console.error(err.message);
+		}
+	} else if (command === "leaderboard") {
+		try {
+			const actsResponse = await axios.get(
+				"https://na.api.riotgames.com/val/content/v1/contents",
+				{
+					headers: {
+						"X-Riot-Token": process.env.RIOT_AUTH_TOKEN,
+					},
+				}
+			);
+			const contents = actsResponse.data;
+			const acts = contents.acts;
+			const activeAct = acts.filter((act) => act.isActive === true)[0];
+			const activeEpisode = acts.filter(
+				(act) => act.id === activeAct.parentId
+			)[0];
+
+			const leaderboardEmbed = new Discord.MessageEmbed()
+				.setColor("#000000")
+				.setTitle(`${activeEpisode.name} ${activeAct.name} Ranked Leaderboard`)
+				.addField("\u200B", "\u200B");
+
+			const leaderboardResponse = await axios.get(
+				`https://na.api.riotgames.com/val/ranked/v1/leaderboards/by-act/${activeAct.id}?size=10&startIndex=0`,
+				{
+					headers: {
+						"X-Riot-Token": process.env.RIOT_AUTH_TOKEN,
+					},
+				}
+			);
+			const players = leaderboardResponse.data.players;
+			for (player of players) {
+				leaderboardEmbed.addField(
+					`Rank ${player.leaderboardRank}`,
+					`${player.gameName}#${player.tagLine} | ${player.rankedRating} RR | ${player.numberOfWins} wins`
+				);
+			}
+
+			message.channel.send({ embed: leaderboardEmbed });
 		} catch (err) {
 			console.error(err.message);
 		}
