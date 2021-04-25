@@ -16,7 +16,33 @@ client.on("message", async (message) => {
 	const args = message.content.slice(prefix.length).split(/ +/);
 	const command = args.shift().toLowerCase();
 
-	if (command === "team") {
+	if (command === "help" || command === "") {
+		const helpEmbed = new Discord.MessageEmbed()
+			.setColor("#000000")
+			.setTitle("Ziko Bot Commands")
+			.addFields([
+				{
+					name: "prefix",
+					value: "+",
+				},
+				{
+					name: "status [server(default=na)]",
+					value:
+						"check valorant servers' status (including maintenances and incidents)",
+				},
+				{
+					name: "leaderboard [server(default=na)] [size(default=10)]",
+					value:
+						"get the top [size] of the valorant leaderboard of the specified server",
+				},
+				{
+					name: "servers",
+					value: "get a list of the abbreviations of all the valorant servers",
+				},
+			]);
+
+		message.channel.send({ embed: helpEmbed });
+	} else if (command === "team") {
 		const teamEmbed = {
 			color: 0x00000,
 			title: "ZCH",
@@ -60,8 +86,14 @@ client.on("message", async (message) => {
 		message.channel.send({ embed: teamEmbed });
 	} else if (command === "status") {
 		try {
+			let server = "na";
+
+			if (args.length === 1) {
+				server = args[0].toLowerCase();
+			}
+
 			const response = await axios.get(
-				"https://na.api.riotgames.com/val/status/v1/platform-data",
+				`https://${server}.api.riotgames.com/val/status/v1/platform-data`,
 				{
 					headers: {
 						"X-Riot-Token": process.env.RIOT_AUTH_TOKEN,
@@ -76,7 +108,7 @@ client.on("message", async (message) => {
 
 			const statusEmbed = new Discord.MessageEmbed()
 				.setColor("#000000")
-				.setTitle("Valorant NA Server Status");
+				.setTitle(`Valorant ${server.toUpperCase()} Server Status`);
 
 			if (maintenanceStatus == null) {
 				statusEmbed.addField("Maintenance Status", "Not under maintenance");
@@ -107,8 +139,24 @@ client.on("message", async (message) => {
 		}
 	} else if (command === "leaderboard") {
 		try {
+			let size = 10;
+			let server = "na";
+
+			if (args.length == 2) {
+				server = args[0].toLowerCase();
+				size = Number.parseInt(args[1]);
+			}
+
+			if (args.length == 1) {
+				if (isNaN(Number.parseInt(args[0]))) {
+					server = args[0].toLowerCase();
+				} else {
+					size = Number.parseInt(args[0]);
+				}
+			}
+
 			const actsResponse = await axios.get(
-				"https://na.api.riotgames.com/val/content/v1/contents",
+				`https://${server}.api.riotgames.com/val/content/v1/contents`,
 				{
 					headers: {
 						"X-Riot-Token": process.env.RIOT_AUTH_TOKEN,
@@ -124,18 +172,24 @@ client.on("message", async (message) => {
 
 			const leaderboardEmbed = new Discord.MessageEmbed()
 				.setColor("#000000")
-				.setTitle(`${activeEpisode.name} ${activeAct.name} Ranked Leaderboard`)
+				.setTitle(
+					`${activeEpisode.name} ${
+						activeAct.name
+					} ${server.toUpperCase()} Ranked Leaderboard`
+				)
 				.addField("\u200B", "\u200B");
 
 			const leaderboardResponse = await axios.get(
-				`https://na.api.riotgames.com/val/ranked/v1/leaderboards/by-act/${activeAct.id}?size=10&startIndex=0`,
+				`https://${server}.api.riotgames.com/val/ranked/v1/leaderboards/by-act/${activeAct.id}?size=${size}&startIndex=0`,
 				{
 					headers: {
 						"X-Riot-Token": process.env.RIOT_AUTH_TOKEN,
 					},
 				}
 			);
+
 			const players = leaderboardResponse.data.players;
+
 			for (player of players) {
 				leaderboardEmbed.addField(
 					`Rank ${player.leaderboardRank}`,
@@ -147,6 +201,44 @@ client.on("message", async (message) => {
 		} catch (err) {
 			console.error(err.message);
 		}
+	} else if (command === "servers") {
+		const serversEmbed = new Discord.MessageEmbed()
+			.setColor("#000000")
+			.setTitle("Valorant Servers Abbreviations")
+			.addFields([
+				{
+					name: "AP",
+					value: "Asia Pacific",
+					inline: true,
+				},
+				{
+					name: "BR",
+					value: "Brazil",
+					inline: true,
+				},
+				{
+					name: "EU",
+					value: "Europe",
+					inline: true,
+				},
+				{
+					name: "KR",
+					value: "Republic of Korea",
+					inline: true,
+				},
+				{
+					name: "LATAM",
+					value: "Latin America",
+					inline: true,
+				},
+				{
+					name: "NA",
+					value: "North America",
+					inline: true,
+				},
+			]);
+
+		message.channel.send({ embed: serversEmbed });
 	}
 });
 
