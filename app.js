@@ -1,17 +1,75 @@
 const Discord = require("discord.js");
 const axios = require("axios").default;
+const mongoose = require("mongoose");
 require("dotenv").config();
+
+const Profile = require("./models/Profile");
 
 const client = new Discord.Client();
 
 const prefix = "+";
 
+mongoose.connect(
+	`mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@cluster0.r10bh.mongodb.net/dev?retryWrites=true&w=majority`,
+	{
+		useNewUrlParser: true,
+		useCreateIndex: true,
+		useUnifiedTopology: true,
+		useFindAndModify: true,
+	}
+);
+
+function msToTime(duration) {
+	var milliseconds = Math.floor((duration % 1000) / 100),
+		seconds = Math.floor((duration / 1000) % 60),
+		minutes = Math.floor((duration / (1000 * 60)) % 60),
+		hours = Math.floor((duration / (1000 * 60 * 60)) % 24);
+
+	// hours = hours < 10 ? "0" + hours : hours;
+	// minutes = minutes < 10 ? "0" + minutes : minutes;
+
+	return hours != 0
+		? `${hours} hours and ${minutes} minutes`
+		: `${minutes} minutes`;
+}
+
 client.once("ready", () => {
 	console.log("Ziko is online.");
 });
 
+client.on("guildMemberAdd", async (member) => {
+	let profile = await Profile.create({
+		userID: member.id,
+		serverID: member.guild.id,
+		coins: 1000,
+		bank: 0,
+	});
+
+	await profile.save();
+});
+
 client.on("message", async (message) => {
 	if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+	let profileData;
+
+	try {
+		profileData = await Profile.findOne({ userID: message.author.id });
+		if (!profileData) {
+			let profile = await Profile.create({
+				userID: message.author.id,
+				serverID: message.guild.id,
+				coins: 1000,
+				bank: 0,
+			});
+
+			await profile.save();
+
+			profileData = profile;
+		}
+	} catch (err) {
+		console.error(err);
+	}
 
 	const args = message.content.slice(prefix.length).split(/ +/);
 	const command = args.shift().toLowerCase();
@@ -254,6 +312,45 @@ client.on("message", async (message) => {
 			message.channel.send(`<@${taggedUser.id}>, ${insult}`);
 		} else {
 			message.channel.send(`<@${message.author.id}>, ${insult}`);
+		}
+	} else if (command === "bal") {
+		const balanceEmbed = new Discord.MessageEmbed()
+			.setColor("#000000")
+			.setAuthor(
+				`${message.author.username}'s Balance`,
+				message.author.avatarURL
+			)
+			.setDescription(
+				`Wallet: **${profileData.coins}**\nBank: **${profileData.bank}**`
+			);
+
+		message.channel.send({ embed: balanceEmbed });
+	} else if (command === "beg") {
+		let coolDown = 3600000;
+		let lastBeg = profileData.lastBeg || 0;
+		if (Date.now() - lastBeg > coolDown) {
+			const amount = Math.floor(Math.random() * 500) + 1;
+			const profile = await Profile.findOneAndUpdate(
+				{
+					userID: message.author.id,
+				},
+				{
+					$inc: {
+						coins: amount,
+					},
+					lastBeg: Date.now(),
+				}
+			);
+
+			message.channel.send(
+				`<@${message.author.id}>, you begged and received ${amount} **coins**.`
+			);
+		} else {
+			message.channel.send(
+				`Too soon, you can beg again in ${msToTime(
+					coolDown - (Date.now() - profileData.lastBeg)
+				)}`
+			);
 		}
 	}
 });
