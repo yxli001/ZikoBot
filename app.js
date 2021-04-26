@@ -16,7 +16,7 @@ async function mongooseSetup() {
 			useNewUrlParser: true,
 			useCreateIndex: true,
 			useUnifiedTopology: true,
-			useFindAndModify: true,
+			useFindAndModify: false,
 		}
 	);
 }
@@ -29,6 +29,18 @@ function msToTime(duration) {
 
 	// hours = hours < 10 ? "0" + hours : hours;
 	// minutes = minutes < 10 ? "0" + minutes : minutes;
+
+	let message = "";
+
+	if (hours != 0) {
+		message += `${hours} hours`;
+	}
+	if (minutes != 0) {
+		message += `, ${minutes} minutes`;
+	}
+	if (seconds != 0) {
+		message += `, and ${seconds} seconds`;
+	}
 
 	return hours != 0
 		? `${hours} hours and ${minutes} minutes`
