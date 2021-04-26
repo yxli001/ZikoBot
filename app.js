@@ -9,15 +9,17 @@ const client = new Discord.Client();
 
 const prefix = "+";
 
-await mongoose.connect(
-	`mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@cluster0.r10bh.mongodb.net/dev?retryWrites=true&w=majority`,
-	{
-		useNewUrlParser: true,
-		useCreateIndex: true,
-		useUnifiedTopology: true,
-		useFindAndModify: true,
-	}
-);
+async function mongooseSetup() {
+	await mongoose.connect(
+		`mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@cluster0.r10bh.mongodb.net/dev?retryWrites=true&w=majority`,
+		{
+			useNewUrlParser: true,
+			useCreateIndex: true,
+			useUnifiedTopology: true,
+			useFindAndModify: true,
+		}
+	);
+}
 
 function msToTime(duration) {
 	var milliseconds = Math.floor((duration % 1000) / 100),
@@ -32,6 +34,8 @@ function msToTime(duration) {
 		? `${hours} hours and ${minutes} minutes`
 		: `${minutes} minutes`;
 }
+
+mongooseSetup();
 
 client.once("ready", () => {
 	console.log("Ziko is online.");
