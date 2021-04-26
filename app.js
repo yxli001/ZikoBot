@@ -9,7 +9,7 @@ const client = new Discord.Client();
 
 const prefix = "+";
 
-mongoose.connect(
+await mongoose.connect(
 	`mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@cluster0.r10bh.mongodb.net/dev?retryWrites=true&w=majority`,
 	{
 		useNewUrlParser: true,
