@@ -204,7 +204,7 @@ client.on("message", async (message) => {
 			);
 
 			const platformData = response.data;
-			const maintenanceStatus = platformData.maintenance_status;
+			const maintenanceStatus = platformData.maintenances[0].maintenance_status;
 			const maintenances = platformData.maintenances;
 			const incidents = platformData.incidents;
 
