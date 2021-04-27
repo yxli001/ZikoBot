@@ -117,6 +117,30 @@ client.on("message", async (message) => {
 					name: "insult [user(default=you)]",
 					value: "send a randomly generated insult and ping the specified user",
 				},
+				{
+					name: "bal",
+					value: "get the your wallet and bank balance",
+				},
+				{
+					name: "beg",
+					value:
+						"beg to get a random amount of money (0-500) added to your wallet, one can only beg once every hour",
+				},
+				{
+					name: "daily",
+					value:
+						"receive daily coins. one can only get daily once every 24 hours",
+				},
+				{
+					name: "deposit [amount]",
+					value:
+						"deposit [amount] of money from your wallet balance to your bank balance. amount has to be a positive integer",
+				},
+				{
+					name: "withdraw [amount]",
+					value:
+						"withdraw [amount] of money from you bank balance to your wallet balance. amount has to be a positive integer",
+				},
 			]);
 
 		message.channel.send({ embed: helpEmbed });
@@ -367,6 +391,97 @@ client.on("message", async (message) => {
 					coolDown - (Date.now() - profileData.lastBeg)
 				)}`
 			);
+		}
+	} else if (command === "daily") {
+		let coolDown = 86400000;
+		let lastDaily = profileData.lastDaily || 0;
+		if (Date.now() - lastDaily > coolDown) {
+			const amount = 500;
+			await Profile.findOneAndUpdate(
+				{
+					userID: message.author.id,
+				},
+				{
+					$inc: {
+						coins: amount,
+					},
+					lastDaily: Date.now(),
+				}
+			);
+
+			message.channel.send(`You received your daily of ${amount} coins`);
+		} else {
+			message.channel.send(
+				`Too soon, you can get daily again in ${msToTime(
+					coolDown - (Date.now() - profileData.lastDaily)
+				)}`
+			);
+		}
+	} else if (command === "deposit") {
+		const amount = args[0];
+
+		if (amount % 1 != 0 || amount <= 0)
+			return message.channel.send(
+				"Deposit amount must be a positive whole number"
+			);
+
+		try {
+			if (amount > profileData.coins) {
+				return message.channel.send(
+					`You don't have ${amount} coins to deposit`
+				);
+			}
+
+			await Profile.findOneAndUpdate(
+				{
+					userID: message.author.id,
+				},
+				{
+					$inc: {
+						coins: -amount,
+						bank: amount,
+					},
+				}
+			);
+
+			message.channel.send(
+				`Successfully deposited ${amount} coins into your bank`
+			);
+		} catch (err) {
+			console.error(err);
+		}
+	} else if (command === "withdraw") {
+		const amount = args[0];
+
+		if (amount % 1 != 0 || amount <= 0)
+			return message.channel.send(
+				"Deposit amount must be a positive whole number"
+			);
+
+		try {
+			if (amount > profileData.bank) {
+				return message.channel.send(
+					`You don't have ${amount} coins to withdraw`
+				);
+			}
+
+			await Profile.findOneAndUpdate(
+				{
+					userID: message.author.id,
+				},
+				{
+					$inc: {
+						coins: amount,
+						bank: -amount,
+					},
+				}
+			);
+
+			message.channel.send(
+				`Successfully withdrew ${amount} coins from your bank`
+			);
+		} catch (err) {
+			console.error(err);
 		}
 	}
 });
