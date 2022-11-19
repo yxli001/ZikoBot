@@ -1,17 +1,41 @@
-const Discord = require("discord.js");
-const axios = require("axios").default;
-const mongoose = require("mongoose");
 require("dotenv").config();
+const { Client, Events, GatewayIntentBits, Collection } = require("discord.js");
+const axios = require("axios").default;
+const fs = require("fs");
+const path = require("node:path");
+const mongoose = require("mongoose");
+
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+
+client.commands = new Collection();
+
+const commandsPath = path.join(__dirname, "commands");
+const commandFiles = fs
+	.readdirSync(commandsPath)
+	.filter((file) => file.endsWith(".js"));
+
+for (const file of commandFiles) {
+	const filePath = path.join(commandsPath, file);
+	const command = require(filePath);
+	// Set a new item in the Collection with the key as the command name and the value as the exported module
+	if ("data" in command && "execute" in command) {
+		client.commands.set(command.data.name, command);
+	} else {
+		console.log(
+			`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
+		);
+	}
+}
+
+const token = process.env.DISCORD_TOKEN;
 
 const Profile = require("./models/Profile");
-
-const client = new Discord.Client();
 
 const prefix = "+";
 
 async function mongooseSetup() {
 	await mongoose.connect(
-		`mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@cluster0.r10bh.mongodb.net/dev?retryWrites=true&w=majority`,
+		`mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@cluster0.r10bh.mongodb.net/?retryWrites=true&w=majority`,
 		{
 			useNewUrlParser: true,
 			useCreateIndex: true,
@@ -49,11 +73,32 @@ function msToTime(duration) {
 
 mongooseSetup();
 
-client.once("ready", () => {
+client.once(Events.ClientReady, () => {
 	console.log("Ziko is online.");
 });
 
-client.on("guildMemberAdd", async (member) => {
+client.on(Events.InteractionCreate, async (interaction) => {
+	if (!interaction.isChatInputCommand()) return;
+
+	const command = interaction.client.commands.get(interaction.commandName);
+
+	if (!command) {
+		console.error(`No command matching ${interaction.commandName} was found.`);
+		return;
+	}
+
+	try {
+		await command.execute(interaction);
+	} catch (error) {
+		console.error(error);
+		await interaction.reply({
+			content: "There was an error while executing this command!",
+			ephemeral: true,
+		});
+	}
+});
+
+client.on(Events.GuildMemberAdd, async (member) => {
 	let profile = await Profile.create({
 		userID: member.id,
 		serverID: member.guild.id,
@@ -64,7 +109,7 @@ client.on("guildMemberAdd", async (member) => {
 	await profile.save();
 });
 
-client.on("message", async (message) => {
+client.on(Events.MessageCreate, async (message) => {
 	if (!message.content.startsWith(prefix) || message.author.bot) return;
 
 	let profileData;
@@ -144,205 +189,6 @@ client.on("message", async (message) => {
 			]);
 
 		message.channel.send({ embed: helpEmbed });
-	} else if (command === "team") {
-		const teamEmbed = {
-			color: 0x00000,
-			title: "ZCH",
-			description: "Ziko's Club House Competitive Valorant Esports Team",
-			thumbnail: {
-				url:
-					"https://cdn1.dotesports.com/wp-content/uploads/2021/01/26075431/Valorant-ss-scaled-1.jpg",
-			},
-			fields: [
-				{
-					name: "\u200B",
-					value: "\u200B",
-				},
-				{
-					name: "ZCH Chonk",
-					value: "Intiator",
-				},
-				{
-					name: "ZCH yxli",
-					value: "Duelist",
-				},
-				{
-					name: "ZCH WOWEE",
-					value: "Duelist",
-				},
-				{
-					name: "ZCH Mocha4Days",
-					value: "Sentinel",
-				},
-				{
-					name: "ZCH Jim Jim",
-					value: "Controller",
-				},
-				{
-					name: "\u200B",
-					value: "\u200B",
-				},
-			],
-			timestamp: new Date(),
-		};
-		message.channel.send({ embed: teamEmbed });
-	} else if (command === "status") {
-		try {
-			let server = "na";
-
-			if (args.length === 1) {
-				server = args[0].toLowerCase();
-			}
-
-			const response = await axios.get(
-				`https://${server}.api.riotgames.com/val/status/v1/platform-data`,
-				{
-					headers: {
-						"X-Riot-Token": process.env.RIOT_AUTH_TOKEN,
-					},
-				}
-			);
-
-			const platformData = response.data;
-			const maintenanceStatus = platformData.maintenances[0]
-				? platformData.maintenances[0].maintenance_status
-				: null;
-			const maintenances = platformData.maintenances;
-			const incidents = platformData.incidents;
-
-			const statusEmbed = new Discord.MessageEmbed()
-				.setColor("#000000")
-				.setTitle(`Valorant ${server.toUpperCase()} Server Status`);
-
-			if (maintenanceStatus == null) {
-				statusEmbed.addField("Maintenance Status", "Not under maintenance");
-			} else {
-				statusEmbed.addField("Maintenance Status", maintenanceStatus);
-			}
-
-			for (maintenance of maintenances) {
-				statusEmbed.addField(
-					maintenance.titles[0].content,
-					maintenance.updates[0].translations[0].content
-				);
-			}
-
-			for (incident of incidents) {
-				statusEmbed.addField(
-					`${
-						incident.incident_severity.charAt(0).toUpperCase() +
-						incident.incident_severity.slice(1)
-					} - ${incident.titles[0].content}`,
-					incident.updates[0].translations[0].content
-				);
-			}
-
-			message.channel.send({ embed: statusEmbed });
-		} catch (err) {
-			console.error(err.message);
-		}
-	} else if (command === "leaderboard") {
-		try {
-			let size = 10;
-			let server = "na";
-
-			if (args.length == 2) {
-				server = args[0].toLowerCase();
-				size = Number.parseInt(args[1]);
-			}
-
-			if (args.length == 1) {
-				if (isNaN(Number.parseInt(args[0]))) {
-					server = args[0].toLowerCase();
-				} else {
-					size = Number.parseInt(args[0]);
-				}
-			}
-
-			const actsResponse = await axios.get(
-				`https://${server}.api.riotgames.com/val/content/v1/contents`,
-				{
-					headers: {
-						"X-Riot-Token": process.env.RIOT_AUTH_TOKEN,
-					},
-				}
-			);
-			const contents = actsResponse.data;
-			const acts = contents.acts;
-			const activeAct = acts.filter((act) => act.isActive === true)[0];
-			const activeEpisode = acts.filter(
-				(act) => act.id === activeAct.parentId
-			)[0];
-
-			const leaderboardEmbed = new Discord.MessageEmbed()
-				.setColor("#000000")
-				.setTitle(
-					`${activeEpisode.name} ${
-						activeAct.name
-					} ${server.toUpperCase()} Ranked Leaderboard`
-				)
-				.addField("\u200B", "\u200B");
-
-			const leaderboardResponse = await axios.get(
-				`https://${server}.api.riotgames.com/val/ranked/v1/leaderboards/by-act/${activeAct.id}?size=${size}&startIndex=0`,
-				{
-					headers: {
-						"X-Riot-Token": process.env.RIOT_AUTH_TOKEN,
-					},
-				}
-			);
-
-			const players = leaderboardResponse.data.players;
-
-			for (player of players) {
-				leaderboardEmbed.addField(
-					`Rank ${player.leaderboardRank}`,
-					`${player.gameName}#${player.tagLine} | ${player.rankedRating} RR | ${player.numberOfWins} wins`
-				);
-			}
-
-			message.channel.send({ embed: leaderboardEmbed });
-		} catch (err) {
-			console.error(err.message);
-		}
-	} else if (command === "servers") {
-		const serversEmbed = new Discord.MessageEmbed()
-			.setColor("#000000")
-			.setTitle("Valorant Servers Abbreviations")
-			.addFields([
-				{
-					name: "AP",
-					value: "Asia Pacific",
-					inline: true,
-				},
-				{
-					name: "BR",
-					value: "Brazil",
-					inline: true,
-				},
-				{
-					name: "EU",
-					value: "Europe",
-					inline: true,
-				},
-				{
-					name: "KR",
-					value: "Republic of Korea",
-					inline: true,
-				},
-				{
-					name: "LATAM",
-					value: "Latin America",
-					inline: true,
-				},
-				{
-					name: "NA",
-					value: "North America",
-					inline: true,
-				},
-			]);
-
-		message.channel.send({ embed: serversEmbed });
 	} else if (command === "insult") {
 		const response = await axios.get(
 			"https://evilinsult.com/generate_insult.php?lang=en&amp;type=json"
@@ -488,4 +334,4 @@ client.on("message", async (message) => {
 	}
 });
 
-client.login(process.env.DISCORD_TOKEN);
+client.login(token);
