@@ -67,67 +67,8 @@ mongooseSetup();
 client.login(token);
 
 // client.on(Events.MessageCreate, async (message) => {
-// 	if (command === "daily") {
-// 		let coolDown = 86400000;
-// 		let lastDaily = profileData.lastDaily || 0;
-// 		if (Date.now() - lastDaily > coolDown) {
-// 			const amount = 500;
-// 			await Profile.findOneAndUpdate(
-// 				{
-// 					userID: message.author.id,
-// 				},
-// 				{
-// 					$inc: {
-// 						coins: amount,
-// 					},
-// 					lastDaily: Date.now(),
-// 				}
-// 			);
-
-// 			message.channel.send(`You received your daily of ${amount} coins`);
-// 		} else {
-// 			message.channel.send(
-// 				`Too soon, you can get daily again in ${msToTime(
-// 					coolDown - (Date.now() - profileData.lastDaily)
-// 				)}`
-// 			);
-// 		}
-// 	} else if (command === "deposit") {
+// 	if (command === "withdraw") {
 // 		const amount = args[0];
-
-// 		if (amount % 1 != 0 || amount <= 0)
-// 			return message.channel.send(
-// 				"Deposit amount must be a positive whole number"
-// 			);
-
-// 		try {
-// 			if (amount > profileData.coins) {
-// 				return message.channel.send(
-// 					`You don't have ${amount} coins to deposit`
-// 				);
-// 			}
-
-// 			await Profile.findOneAndUpdate(
-// 				{
-// 					userID: message.author.id,
-// 				},
-// 				{
-// 					$inc: {
-// 						coins: -amount,
-// 						bank: amount,
-// 					},
-// 				}
-// 			);
-
-// 			message.channel.send(
-// 				`Successfully deposited ${amount} coins into your bank`
-// 			);
-// 		} catch (err) {
-// 			console.error(err);
-// 		}
-// 	} else if (command === "withdraw") {
-// 		const amount = args[0];
-
 // 		if (amount % 1 != 0 || amount <= 0)
 // 			return message.channel.send(
 // 				"Deposit amount must be a positive whole number"

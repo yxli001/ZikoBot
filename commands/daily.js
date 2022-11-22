@@ -4,9 +4,9 @@ const Guild = require("../models/Guild.js");
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName("beg")
+		.setName("daily")
 		.setDescription(
-			"Beg to get a random amount of money (0-500) added to your wallet, one can only beg once every hour."
+			"Receive daily coins. one can only get daily once every 24 hours"
 		),
 	async execute(interaction) {
 		try {
@@ -17,24 +17,22 @@ module.exports = {
 				(user) => user.userId === interaction.user.id
 			);
 
-			let coolDown = 5 * 60 * 1000;
-			let lastBeg = user.lastBeg || 0;
+			let coolDown = 86400000;
+			let lastDaily = user.lastDaily || 0;
 
-			if (Date.now() - lastBeg > coolDown) {
-				const amount = Math.floor(Math.random() * 500) + 1;
+			if (Date.now() - lastDaily > coolDown) {
+				const amount = 500;
 
 				user.coins += amount;
-				user.lastBeg = Date.now();
+				user.lastDaily = Date.now();
 
 				await guild.save();
 
-				await interaction.reply(
-					`You begged and received ${amount} **coins**.`
-				);
+				interaction.reply(`You received your daily of ${amount} coins`);
 			} else {
-				await interaction.reply(
-					`Too soon, you can beg again in ${formatDuration(
-						coolDown - (Date.now() - lastBeg)
+				interaction.reply(
+					`Too soon, you can get daily again in ${formatDuration(
+						coolDown - (Date.now() - user.lastDaily)
 					)}`
 				);
 			}

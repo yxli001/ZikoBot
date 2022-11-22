@@ -11,9 +11,18 @@ module.exports = {
 				.setDescription("Send the insult to a specified user")
 		),
 	async execute(interaction) {
-		const response = await axios.get(
-			"https://evilinsult.com/generate_insult.php?lang=en&amp;type=json"
-		);
+		const whichApiToUse = Math.floor(Math.random() * 2) === 1;
+
+		let response;
+
+		if (whichApiToUse) {
+			response = await axios.get(
+				"https://evilinsult.com/generate_insult.php?lang=en&amp;type=json"
+			);
+		} else {
+			response = await axios.get("https://insult.mattbas.org/api/insult");
+		}
+
 		let insult = response.data;
 		const taggedUser =
 			interaction.options.getUser("user") ?? interaction.user;
