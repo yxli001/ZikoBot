@@ -65,39 +65,3 @@ async function mongooseSetup() {
 mongooseSetup();
 
 client.login(token);
-
-// client.on(Events.MessageCreate, async (message) => {
-// 	if (command === "withdraw") {
-// 		const amount = args[0];
-// 		if (amount % 1 != 0 || amount <= 0)
-// 			return message.channel.send(
-// 				"Deposit amount must be a positive whole number"
-// 			);
-
-// 		try {
-// 			if (amount > profileData.bank) {
-// 				return message.channel.send(
-// 					`You don't have ${amount} coins to withdraw`
-// 				);
-// 			}
-
-// 			await Profile.findOneAndUpdate(
-// 				{
-// 					userID: message.author.id,
-// 				},
-// 				{
-// 					$inc: {
-// 						coins: amount,
-// 						bank: -amount,
-// 					},
-// 				}
-// 			);
-
-// 			message.channel.send(
-// 				`Successfully withdrew ${amount} coins from your bank`
-// 			);
-// 		} catch (err) {
-// 			console.error(err);
-// 		}
-// 	}
-// });
