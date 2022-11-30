@@ -13,6 +13,7 @@ module.exports = {
 			const guild = await Guild.findOne({
 				guildId: interaction.guild.id,
 			});
+
 			const user = guild.users.find(
 				(user) => user.userId === interaction.user.id
 			);

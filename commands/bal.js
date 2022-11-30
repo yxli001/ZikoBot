@@ -22,7 +22,7 @@ module.exports = {
 					`Wallet: **${user.coins}**\nBank: **${user.bank}**`
 				);
 
-			interaction.reply({ embeds: [balanceEmbed] });
+			await interaction.reply({ embeds: [balanceEmbed] });
 		} catch (e) {
 			console.log(e);
 		}

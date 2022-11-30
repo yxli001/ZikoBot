@@ -28,9 +28,11 @@ module.exports = {
 
 				await guild.save();
 
-				interaction.reply(`You received your daily of ${amount} coins`);
+				await interaction.reply(
+					`You received your daily of ${amount} coins`
+				);
 			} else {
-				interaction.reply(
+				await interaction.reply(
 					`Too soon, you can get daily again in ${formatDuration(
 						coolDown - (Date.now() - user.lastDaily)
 					)}`

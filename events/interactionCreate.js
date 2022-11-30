@@ -8,9 +8,16 @@ module.exports = {
 		if (!interaction.isChatInputCommand()) return;
 
 		try {
-			const guild = await Guild.findOne({
+			let guild = await Guild.findOne({
 				guildId: interaction.guild.id,
 			});
+
+			if (!guild)
+				guild = new Guild({
+					guildId: interaction.guild.id,
+					users: [],
+				});
+
 			let user = guild.users.find(
 				(user) => user.userId === interaction.user.id
 			);

@@ -18,7 +18,7 @@ module.exports = {
 		const amount = interaction.options.getInteger("amount");
 
 		if (amount % 1 != 0 || amount <= 0)
-			return interaction.reply(
+			return await interaction.reply(
 				"Deposit amount must be a positive integer"
 			);
 
@@ -42,7 +42,7 @@ module.exports = {
 
 			await guild.save();
 
-			interaction.reply(
+			await interaction.reply(
 				`Successfully deposited ${amount} coins into your bank`
 			);
 		} catch (err) {

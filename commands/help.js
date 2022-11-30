@@ -5,35 +5,37 @@ module.exports = {
 		.setName("help")
 		.setDescription("Get a list of commands available."),
 	async execute(interaction) {
+		const fs = require("node:fs");
+
+		const commands = [];
+		// Grab all the command files from the commands directory you created earlier
+		const commandFiles = fs
+			.readdirSync("./commands")
+			.filter((file) => file.endsWith(".js"));
+
+		// Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
+		for (const file of commandFiles) {
+			const command = require(`./${file}`);
+			commands.push(command.data.toJSON());
+		}
+
+		commands.sort((a, b) => {
+			return a.name.localeCompare(b.name);
+		});
+
 		const helpEmbed = new EmbedBuilder()
 			.setColor("#00d6cb")
 			.setTitle("Ziko Bot Commands")
-			.addFields([
-				{
-					name: "/insult [user(default=you)]",
-					value: "Send a randomly generated insult and ping the specified user",
-				},
-				{
-					name: "/bal",
-					value: "Get the your wallet and bank balance",
-				},
-				{
-					name: "/beg",
-					value: "Beg to get a random amount of money (0-500) added to your wallet, one can only beg once every hour",
-				},
-				{
-					name: "/daily",
-					value: "Receive daily coins. one can only get daily once every 24 hours",
-				},
-				{
-					name: "/deposit [amount]",
-					value: "Deposit [amount] of money from your wallet balance to your bank balance. amount has to be a positive integer",
-				},
-				{
-					name: "/withdraw [amount]",
-					value: "Withdraw [amount] of money from you bank balance to your wallet balance. amount has to be a positive integer",
-				},
-			]);
+			.addFields(
+				commands.map((command) => {
+					return {
+						name: `/${command.name} ${command.options
+							.map((option) => `[${option.name}]`)
+							.join(" ")}`,
+						value: command.description,
+					};
+				})
+			);
 
 		await interaction.reply({ embeds: [helpEmbed] });
 	},
