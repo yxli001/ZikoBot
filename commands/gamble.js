@@ -14,6 +14,7 @@ module.exports = {
 	async execute(interaction) {
 		const amount = interaction.options.getInteger("amount");
 		const won = Math.random() < 0.58;
+		const jackpot = Math.random() < 0.01;
 
 		try {
 			const guild = await Guild.findOne({
@@ -31,14 +32,15 @@ module.exports = {
 			if (amount > user.coins)
 				return await interaction.reply("You don't got the funds buddy");
 
+			if (jackpot) amount += 10000;
 			if (won) user.coins += amount;
 			else user.coins -= amount;
 
 			await guild.save();
 			await interaction.reply(
-				`You ${won ? "won" : "lost"} ${amount} coin${
-					amount > 1 ? "s" : ""
-				}.`
+				`${jackpot ? "JACKPOT!!!! " : ""}You ${
+					won ? "won" : "lost"
+				} ${amount} coin${amount > 1 ? "s" : ""}.`
 			);
 		} catch (e) {
 			console.log(e);

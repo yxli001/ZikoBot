@@ -1,5 +1,7 @@
 const { Events } = require("discord.js");
 
+const theOne = "782958279621345301";
+
 module.exports = {
 	name: Events.MessageCreate,
 	once: false,
