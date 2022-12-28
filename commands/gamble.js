@@ -12,7 +12,7 @@ module.exports = {
 				.setRequired(true)
 		),
 	async execute(interaction) {
-		const amount = interaction.options.getInteger("amount");
+		let amount = interaction.options.getInteger("amount");
 		const won = Math.random() < 0.58;
 		const jackpot = Math.random() < 0.01;
 
